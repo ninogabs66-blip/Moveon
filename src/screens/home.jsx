@@ -16,6 +16,9 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import Logo from "../components/logo";
+import PassengerDrawer from "../components/PassengerDrawer";
+import BookingBottomSheet from "../components/BookingBottomSheet";
+import RatingModal from "../components/ratingModal";
 import { AuthContext } from "./AuthContext";
 
 const MAPBOX_ACCESS_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
@@ -54,7 +57,6 @@ export default function HomeScreen() {
   const [routeNotice, setRouteNotice] = useState("");
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
-  const [selectedRating, setSelectedRating] = useState(0);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
   // Distance & Route Coordinates States
@@ -67,7 +69,6 @@ export default function HomeScreen() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
 
-  const slideAnim = useState(new Animated.Value(-300))[0];
 
   useEffect(() => {
     (async () => {
@@ -179,33 +180,7 @@ export default function HomeScreen() {
     }
   }, [activeBooking?.id]);
 
-  const toggleDrawer = () => {
-    if (isDrawerOpen) {
-      Animated.timing(slideAnim, {
-        toValue: -300,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => setIsDrawerOpen(false));
-    } else {
-      setIsDrawerOpen(true);
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
-  const navigateFromDrawer = (path) => {
-    Animated.timing(slideAnim, {
-      toValue: -300,
-      duration: 220,
-      useNativeDriver: true,
-    }).start(() => {
-      setIsDrawerOpen(false);
-      router.push(path);
-    });
-  };
+  const toggleDrawer = () => setIsDrawerOpen((open) => !open);
 
   useEffect(() => {
     const handleBackPress = () => {
@@ -218,11 +193,7 @@ export default function HomeScreen() {
         return true;
       }
       if (isDrawerOpen) {
-        Animated.timing(slideAnim, {
-          toValue: -300,
-          duration: 220,
-          useNativeDriver: true,
-        }).start(() => setIsDrawerOpen(false));
+        setIsDrawerOpen(false);
         return true;
       }
       if (activeBooking) return true;
@@ -257,7 +228,7 @@ export default function HomeScreen() {
     if (activeBooking) return;
 
     if (isDrawerOpen) {
-      toggleDrawer();
+      setIsDrawerOpen(false);
       return;
     }
 
@@ -346,18 +317,19 @@ export default function HomeScreen() {
     setRouteCoordinates([]);
   };
 
-  const handleSubmitRating = async () => {
-    if (!activeBooking?.id || selectedRating < 1) return;
+  const handleSubmitRating = async (rating) => {
+    if (!activeBooking?.id || rating < 1) return { success: false };
     setIsSubmittingRating(true);
-    const result = await submitRiderRating(activeBooking.id, selectedRating);
+    const result = await submitRiderRating(activeBooking.id, rating);
     setIsSubmittingRating(false);
 
     if (!result?.success) {
       Alert.alert("Rating Failed", result?.message || "Your rating could not be saved.");
-      return;
+      return { success: false, message: result?.message };
     }
 
     setIsRatingModalOpen(false);
+    return { success: true };
   };
 
   useEffect(() => {
@@ -365,7 +337,6 @@ export default function HomeScreen() {
       activeBooking?.status === "Drop Off / Complete" &&
       !activeBooking.passengerRating
     ) {
-      setSelectedRating(0);
       setIsRatingModalOpen(true);
     } else {
       setIsRatingModalOpen(false);
@@ -419,203 +390,37 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Dark Overlay */}
-      {isDrawerOpen && (
-        <TouchableOpacity 
-          style={styles.overlay} 
-          activeOpacity={1} 
-          onPress={toggleDrawer} 
+      <PassengerDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        currentUser={currentUser}
+        activeBooking={activeBooking}
+        onNavigate={(path) => router.push(path)}
+        onLogout={handleLogout}
+        theme={theme}
+      />
+
+      {!activeBooking && (
+        <BookingBottomSheet
+          isServiceOpen={isServiceModalOpen}
+          isFormOpen={isFormOpen}
+          selectedService={selectedService}
+          pickupText={pickupText}
+          destinationText={destinationText}
+          hasDestination={!!destination}
+          distance={distance}
+          estimatedFare={estimatedFare}
+          isCalculatingRoute={isCalculatingRoute}
+          routeError={routeError}
+          routeNotice={routeNotice}
+          isSubmitting={isSubmittingBooking}
+          onOpenService={() => setIsServiceModalOpen(true)}
+          onCloseService={() => setIsServiceModalOpen(false)}
+          onSelectService={handleSelectService}
+          onCloseForm={() => setIsFormOpen(false)}
+          onConfirmBooking={handleConfirmBooking}
+          theme={theme}
         />
-      )}
-
-      {/* Side Drawer */}
-      <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            {currentUser?.avatar_url ? (
-              <Image source={{ uri: currentUser.avatar_url }} style={styles.profileAvatarImage} />
-            ) : (
-              <Logo size={55} />
-            )}
-          </View>
-          <TouchableOpacity
-            style={styles.profileNameRow}
-            activeOpacity={0.7}
-            onPress={() => navigateFromDrawer("/(tabs)/details")}
-          >
-            <View>
-              <Text style={styles.profileName}>{currentUser?.full_name || currentUser?.email || "Passenger"}</Text>
-              {!!currentUser?.email && <Text style={styles.profileEmail}>{currentUser.email}</Text>}
-              {!!currentUser?.phone && <Text style={styles.profileEmail}>{currentUser.phone}</Text>}
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.text} style={{ marginLeft: 4 }} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.drawerContent} showsVerticalScrollIndicator={false}>
-          <TouchableOpacity
-            style={styles.drawerItem}
-            activeOpacity={0.7}
-            onPress={() => navigateFromDrawer("/historyPassenger")}
-          >
-            <Ionicons name="document-text-outline" size={22} color={theme.text} />
-            <Text style={styles.drawerItemText}>History</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.drawerItem}
-            activeOpacity={0.7}
-            onPress={() => navigateFromDrawer("/savedplacesPassenger")}
-          >
-            <Ionicons name="bookmark-outline" size={22} color={theme.text} />
-            <Text style={styles.drawerItemText}>Saved Places</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.drawerItem}
-            activeOpacity={0.7}
-            onPress={() => navigateFromDrawer("/inboxPassenger")}
-          >
-            <Ionicons name="mail-outline" size={22} color={theme.text} />
-            <Text style={styles.drawerItemText}>Inbox</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.drawerItem}
-            activeOpacity={0.7}
-            onPress={() => navigateFromDrawer("/paymentPassenger")}
-          >
-            <Ionicons name="card-outline" size={22} color={theme.text} />
-            <Text style={styles.drawerItemText}>Payment Methods</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.drawerItem}
-            activeOpacity={0.7}
-            onPress={() => navigateFromDrawer("/supportPassenger")}
-          >
-            <Ionicons name="help-circle-outline" size={22} color={theme.text} />
-            <Text style={styles.drawerItemText}>Help & Support</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.drawerItem}
-            activeOpacity={0.7}
-            onPress={() => router.push("/(tabs)/details")}
-          >
-            <Ionicons name="settings-outline" size={22} color={theme.text} />
-            <Text style={styles.drawerItemText}>Settings & Profile</Text>
-          </TouchableOpacity>
-        </ScrollView>
-
-        {!activeBooking && (
-          <TouchableOpacity style={styles.drawerLogoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-            <Ionicons name="log-out-outline" size={22} color="#ef4444" />
-            <Text style={styles.drawerLogoutText}>Log Out</Text>
-          </TouchableOpacity>
-        )}
-      </Animated.View>
-
-      {/* Service Selection Sheet */}
-      {isServiceModalOpen && (
-        <View style={styles.expandedContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Book a Ride</Text>
-            <TouchableOpacity onPress={() => setIsServiceModalOpen(false)}>
-              <Ionicons name="close" size={24} color={theme.text} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.sectionLabel}>Select a service type</Text>
-
-          <TouchableOpacity 
-            style={styles.serviceCard} 
-            activeOpacity={0.8}
-            onPress={() => handleSelectService('Motorcycle')}
-          >
-            <View style={styles.serviceIconContainer}>
-              <Logo size={40} />
-            </View>
-            <Text style={styles.serviceCardText}>Motorcycle</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Form Sheet */}
-      {isFormOpen && (
-        <View style={styles.expandedContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Book {selectedService}</Text>
-            <TouchableOpacity onPress={() => setIsFormOpen(false)}>
-              <Ionicons name="close" size={24} color={theme.text} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Ionicons name="location" size={20} color="#0284c7" style={styles.inputIcon} />
-            <View style={styles.locationTextContainer}>
-              <Text style={styles.locationLabel}>Pickup Location</Text>
-              <Text style={styles.readOnlyInput}>{pickupText}</Text>
-            </View>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Ionicons name="pin" size={20} color="#ef4444" style={styles.inputIcon} />
-            <View style={styles.locationTextContainer}>
-              <Text style={styles.locationLabel}>Destination</Text>
-              <Text style={styles.readOnlyInput}>{destinationText || "Tap the map to choose a destination"}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.mapHintText}>
-            {isCalculatingRoute
-              ? "Calculating route and fare..."
-              : routeError
-                ? routeError
-                : routeNotice
-                  ? routeNotice
-                  : destination
-                    ? `Route distance: ${distance.toFixed(2)} km`
-                    : "Tap anywhere on the map to set your destination."}
-          </Text>
-
-          <View style={styles.farePreview}>
-            <Text style={styles.farePreviewLabel}>Estimated Fare</Text>
-            <Text style={styles.farePreviewAmount}>
-              {distance > 0 && !routeError ? `₱${estimatedFare.toFixed(2)}` : "—"}
-            </Text>
-            <Text style={styles.farePreviewNote}>₱50 base fare + ₱25 per estimated kilometer. Final distance may vary when Mapbox is unavailable.</Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.confirmBookButton}
-            onPress={handleConfirmBooking}
-            activeOpacity={0.8}
-            disabled={isCalculatingRoute || !!routeError || distance <= 0 || isSubmittingBooking}
-          >
-            <Text style={styles.confirmBookText}>Review and Confirm Booking</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Default Bottom Bar */}
-      {!activeBooking && !isServiceModalOpen && !isFormOpen && (
-        <View style={styles.bottomContainer}>
-          <TouchableOpacity 
-            style={styles.serviceRow} 
-            activeOpacity={0.7}
-            onPress={() => setIsServiceModalOpen(true)}
-          >
-            <Text style={styles.serviceText}>🛵 Choose Service ›</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.bookButton}
-            onPress={() => setIsServiceModalOpen(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.bookText}>Book a Ride</Text>
-          </TouchableOpacity>
-        </View>
       )}
 
       {/* Live booking status and registered driver information */}
@@ -707,43 +512,11 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <Modal
+      <RatingModal
         visible={isRatingModalOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {}}
-      >
-        <View style={styles.ratingModalOverlay}>
-          <View style={styles.ratingModalCard}>
-            <Ionicons name="checkmark-circle" size={42} color="#10b981" />
-            <Text style={styles.ratingModalTitle}>Ride Completed!</Text>
-            <Text style={styles.ratingModalText}>How was your driver?</Text>
-            <View style={styles.ratingStars}>
-              {Array.from({ length: 5 }, (_, index) => (
-                <TouchableOpacity key={index} onPress={() => setSelectedRating(index + 1)}>
-                  <Ionicons
-                    name={selectedRating >= index + 1 ? "star" : "star-outline"}
-                    size={34}
-                    color="#f59e0b"
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.ratingModalText}>
-              {selectedRating ? `${selectedRating} out of 5 stars` : "Tap a star to rate your driver"}
-            </Text>
-            <TouchableOpacity
-              style={[styles.confirmBookButton, selectedRating === 0 && styles.disabledButton]}
-              onPress={handleSubmitRating}
-              disabled={selectedRating === 0 || isSubmittingRating}
-            >
-              <Text style={styles.confirmBookText}>
-                {isSubmittingRating ? "Saving..." : "Submit Rating"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        isSubmitting={isSubmittingRating}
+        onSubmit={handleSubmitRating}
+      />
     </View>
   );
 }
