@@ -512,6 +512,7 @@ export default function HomeScreen() {
         visible={isRatingModalOpen}
         isSubmitting={isSubmittingRating}
         onSubmit={handleSubmitRating}
+        theme={theme}
       />
     </View>
   );
