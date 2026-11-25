@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function RatingModal({ visible, isSubmitting, onSubmit }) {
+export default function RatingModal({ visible, isSubmitting, onSubmit, theme }) {
   const [selectedRating, setSelectedRating] = useState(0);
   useEffect(() => { if (visible) setSelectedRating(0); }, [visible]);
 
@@ -14,9 +14,9 @@ export default function RatingModal({ visible, isSubmitting, onSubmit }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={() => {}}>
       <View style={styles.overlay}>
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
           <Ionicons name="checkmark-circle" size={42} color="#10b981" />
-          <Text style={styles.title}>Ride Completed!</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Ride Completed!</Text>
           <Text style={styles.text}>How was your driver?</Text>
           <View style={styles.stars}>
             {Array.from({ length: 5 }, (_, index) => (
