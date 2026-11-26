@@ -235,22 +235,22 @@ export default function ProfileDetailsScreen() {
           <>
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Account</Text>
-              <ProfileLink icon="person-outline" title="Personal Information" subtitle="Name, contact number and account details" onPress={() => setPage("edit")} theme={theme} />
-              <ProfileLink icon="time-outline" title="Ride History" subtitle="View previous trips" onPress={() => router.push(isDriver ? "/(tabs)/rideHistory" : "/historyPassenger")} theme={theme} />
+              <ProfileLink icon="person-outline" title="Personal Information" subtitle="Name, contact number and account details" onPress={() => setPage("edit")} theme={theme} styles={styles} />
+              <ProfileLink icon="time-outline" title="Ride History" subtitle="View previous trips" onPress={() => router.push(isDriver ? "/(tabs)/rideHistory" : "/historyPassenger")} theme={theme} styles={styles} />
             </View>
 
             {!isDriver && (
               <View style={styles.sectionCard}>
                 <Text style={styles.sectionTitle}>Travel</Text>
-                <ProfileLink icon="bookmark-outline" title="Saved Places" subtitle="Tap a saved location to pin it on the map" onPress={() => router.push("/savedplacesPassenger")} theme={theme} />
-                <ProfileLink icon="card-outline" title="Payment Methods" subtitle="Manage your preferred payment option" onPress={() => router.push("/paymentPassenger")} theme={theme} />
+                <ProfileLink icon="bookmark-outline" title="Saved Places" subtitle="Tap a saved location to pin it on the map" onPress={() => router.push("/savedplacesPassenger")} theme={theme} styles={styles} />
+                <ProfileLink icon="card-outline" title="Payment Methods" subtitle="Manage your preferred payment option" onPress={() => router.push("/paymentPassenger")} theme={theme} styles={styles} />
               </View>
             )}
 
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Communication & Support</Text>
-              <ProfileLink icon="chatbubble-ellipses-outline" title="Messages" subtitle={activeBooking ? "Open the active ride conversation" : "View notifications and messages"} onPress={openMessages} theme={theme} />
-              <ProfileLink icon="help-circle-outline" title="Help & Support" subtitle="FAQs and contact details" onPress={() => router.push("/supportPassenger")} theme={theme} />
+              <ProfileLink icon="chatbubble-ellipses-outline" title="Messages" subtitle={activeBooking ? "Open the active ride conversation" : "View notifications and messages"} onPress={openMessages} theme={theme} styles={styles} />
+              <ProfileLink icon="help-circle-outline" title="Help & Support" subtitle="FAQs and contact details" onPress={() => router.push("/supportPassenger")} theme={theme} styles={styles} />
             </View>
 
             <View style={styles.sectionCard}>
@@ -306,7 +306,7 @@ export default function ProfileDetailsScreen() {
   );
 }
 
-function ProfileLink({ icon, title, subtitle, onPress, theme }) {
+function ProfileLink({ icon, title, subtitle, onPress, theme, styles }) {
   return (
     <TouchableOpacity style={profileLinkStyles.linkRow} onPress={onPress} activeOpacity={0.7}>
       <View style={[styles.preferenceIcon, { backgroundColor: theme.accentSoft }]}>
