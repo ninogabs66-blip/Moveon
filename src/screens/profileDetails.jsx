@@ -308,7 +308,7 @@ export default function ProfileDetailsScreen() {
 
 function ProfileLink({ icon, title, subtitle, onPress, theme }) {
   return (
-    <TouchableOpacity style={styles.linkRow} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity style={profileLinkStyles.linkRow} onPress={onPress} activeOpacity={0.7}>
       <View style={[styles.preferenceIcon, { backgroundColor: theme.accentSoft }]}>
         <Ionicons name={icon} size={21} color={theme.accent} />
       </View>
@@ -320,6 +320,10 @@ function ProfileLink({ icon, title, subtitle, onPress, theme }) {
     </TouchableOpacity>
   );
 }
+
+const profileLinkStyles = StyleSheet.create({
+  linkRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 11 },
+});
 
 const createStyles = (isDark) => StyleSheet.create({
   container: { flex: 1, backgroundColor: isDark ? "#0b1220" : "#f8fafc" },
